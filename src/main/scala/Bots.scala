@@ -27,6 +27,7 @@ object Lookup {
 
   var mines: Vector[Pos] = Vector.empty
   var taverns: Vector[Pos] = Vector.empty
+  var walls: Vector[Pos] = Vector.empty
   var worldMap: Vector[(Pos, Tile)] = Vector.empty
 
   def build(gameBoard: Board): Unit = {
@@ -34,6 +35,8 @@ object Lookup {
     buildMinesLookup()
     buildTavernsLookup()
   }
+
+  def getClosedTiles(heroes: List[Hero]): Vector[Pos] = mines ++ taverns ++ walls ++ heroes.map {h => h.pos}.toVector
 
   private def buildBoard(board: Board): Unit =
     worldMap = board.tiles.zipWithIndex.map { indexedTile: (Tile, Int) =>
@@ -48,6 +51,11 @@ object Lookup {
     case _ => false }.map {_._1}
 
   private def buildMinesLookup(): Unit = mines = worldMap.filter {
-    case (_, Tile.Mine(owner)) => true
-    case _ => false }.map {_.1}
+    case (_, Tile.Mine(_)) => true
+    case _ => false }.map {_._1}
+
+  private def buildWallsLookup(): Unit = walls = worldMap.filter {
+    case (_, Tile.Wall) => true
+    case _ => false }.map {_._1}
+
 }
