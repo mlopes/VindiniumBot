@@ -31,6 +31,8 @@ object Tile {
   case class Mine(heroId: Option[Int]) extends Tile
 }
 
+case class PositionedTile(position: Pos, tile: Tile)
+
 case class Board(size: Int, tiles: Vector[Tile]) {
 
   def at(pos: Pos): Option[Tile] =
