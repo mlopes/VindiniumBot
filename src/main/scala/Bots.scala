@@ -9,7 +9,7 @@ trait Bot {
   def move(input: Input): Dir
 }
 
-class RandomBot extends Bot {
+class TheTerminator extends Bot {
 
   var lookup: Option[Lookup] = None
 
