@@ -26,23 +26,20 @@ class RandomBot extends Bot {
 
 class Lookup(gameBoard: Board) {
   val worldMap: Vector[PositionedTile] = buildBoard(gameBoard)
-  val mines: Vector[Pos] = buildMinesLookup(worldMap)
-  val taverns: Vector[Pos] = buildTavernsLookup(worldMap)
-  val walls: Vector[Pos] = buildWallsLookup(worldMap)
 
-  def getClosedTiles(heroes: List[Hero]): Vector[Pos] = mines ++ taverns ++ walls ++ heroes.map {h => h.pos}.toVector
+  val mines: Vector[Pos] = worldMap.collect {
+    case PositionedTile(p: Pos, Tile.Mine(_)) => p }
+
+  val taverns: Vector[Pos] = worldMap.collect {
+    case PositionedTile(p: Pos, Tile.Tavern) => p }
+
+  val walls: Vector[Pos] = worldMap.collect {
+    case PositionedTile(p: Pos, Tile.Wall) => p }
+
+  def getClosedTiles(heroes: List[Hero]): Vector[Pos] = mines ++ taverns ++ walls ++ heroes.map(_.pos).toVector
 
   private def buildBoard(board: Board): Vector[PositionedTile] =
     board.tiles.zip((0 until board.size).flatMap(x => (0 until board.size).map(Pos(x, _)))).map {
       case (Tile.Hero(_), p: Pos) => PositionedTile(p, Tile.Air)
       case (t: Tile, p: Pos) => PositionedTile(p, t) }
-
-  private def buildTavernsLookup(map: Vector[PositionedTile]): Vector[Pos] = map.collect {
-    case PositionedTile(p: Pos, Tile.Tavern) => p }
-
-  private def buildMinesLookup(map: Vector[PositionedTile]): Vector[Pos] = map.collect {
-    case PositionedTile(p: Pos, Tile.Mine(_)) => p }
-
-  private def buildWallsLookup(map: Vector[PositionedTile]): Vector[Pos] = map.collect {
-    case PositionedTile(p: Pos, Tile.Wall) => p }
 }
