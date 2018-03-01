@@ -11,26 +11,28 @@ trait Bot {
 
 class RandomBot extends Bot {
 
-  var mines: Vector[(Pos, Tile)] = Vector.empty
-  var taverns: Vector[(Pos, Tile)] = Vector.empty
-  var worldMap: Vector[(Pos, Tile)] = Vector.empty
-
   def move(input: Input): bot.Dir.Value = {
 
     if(input.game.turn < 4) {
-      buildLookups(input.game.board)
+      Lookup.build(input.game.board)
     }
 
     Random.shuffle(List(Dir.North, Dir.South, Dir.East, Dir.West)) find { dir ⇒
       input.game.board at input.hero.pos.to(dir) exists (Wall!=)
     }
   } getOrElse Dir.Stay
+}
 
+object Lookup {
 
-  private def buildLookups(gameBoard: Board): Unit = {
+  var mines: Vector[Pos] = Vector.empty
+  var taverns: Vector[Pos] = Vector.empty
+  var worldMap: Vector[(Pos, Tile)] = Vector.empty
+
+  def build(gameBoard: Board): Unit = {
     buildBoard(gameBoard)
-    buildMinesLookup
-    buildTavernsLookup
+    buildMinesLookup()
+    buildTavernsLookup()
   }
 
   private def buildBoard(board: Board): Unit =
@@ -41,11 +43,11 @@ class RandomBot extends Bot {
           case Tile.Hero(_) => Tile.Air
           case t: Tile => t })}
 
-  private def buildTavernsLookup: Unit = taverns = worldMap.filter {
-      case (_, Tile.Tavern) => true
-      case _ => false }
+  private def buildTavernsLookup(): Unit = taverns = worldMap.filter {
+    case (_, Tile.Tavern) => true
+    case _ => false }.map {_._1}
 
-  private def buildMinesLookup: Unit = mines = worldMap.filter {
-      case (_, Tile.Mine(owner)) => true
-      case _ => false }
+  private def buildMinesLookup(): Unit = mines = worldMap.filter {
+    case (_, Tile.Mine(owner)) => true
+    case _ => false }.map {_.1}
 }
