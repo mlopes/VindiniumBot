@@ -4,6 +4,7 @@ import Dir._
 
 import scala.util.Random
 import Tile._
+import bot.AStar.Step
 
 trait Bot {
   def move(input: Input): Dir
@@ -19,11 +20,34 @@ class TheTerminator extends Bot {
     val hero: Hero = input.hero
     val lookup: Lookup = lookupOption.getOrElse(new Lookup(board))
 
-    println(hero.pos)
-    println(lookup.mines.head)
-    println(AStar.getShortestPathTo(board, hero.pos, lookup.mines.head))
+    if(input.game.turn < 4) {
+      println(lookup.worldMap)
+      println(input.game.board.tiles)
+    }
 
-    Dir.Stay
+    println(s"mine at ${lookup.mines.head}")
+    println(s"me at ${hero.pos}")
+
+    val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, lookup.mines.head)
+
+    println(s"Next mine path: $pathToNextMine")
+
+    val step = pathToNextMine.reverse.headOption match {
+      case Some(s: Step) =>
+        if(s.pos.y == hero.pos.y) {
+          if(s.pos.x > hero.pos.x) Dir.South
+          else Dir.North
+        } else {
+          if(s.pos.y > hero.pos.y) Dir.East
+          Dir.West
+        }
+      case None => Dir.Stay
+    }
+
+    println(s"step to $step")
+
+    step
+
     //    Random.shuffle(List(Dir.North, Dir.South, Dir.East, Dir.West)) find { dir ⇒
     //      input.game.board at input.hero.pos.to(dir) exists (Wall!=)
     //    }
@@ -55,35 +79,56 @@ object AStar {
 
   def getShortestPathTo(board: Board, origin: Pos, destination: Pos): List[Step] = {
 
-    def loop(currentTile: Pos, cost: Int, parent: Option[Step], openTiles: List[Step], closedTiles: List[Pos], shortestPath: List[Step]): List[Step] = {
+    def loop(currentTile: Pos, cost: Int, openTiles: List[Step], closedTiles: Set[Pos], shortestPath: List[Step]): List[Step] = {
+
+      val updatedClosedTiles = closedTiles + currentTile
+
       val newOpenTiles: List[AStar.Step] = currentTile.neighbors.collect {
-        case p if p == destination => AStar.Step(p, cost, estimatedCost(p, destination), parent)
-        case p if board.at(p) == Some(Tile.Air) => AStar.Step(p, cost, estimatedCost(p, destination), parent)
-      }.toList
+        case p if p == destination => AStar.Step(p, cost, estimatedCost(p, destination))
+        case p if board.at(p) == Some(Tile.Air) => AStar.Step(p, cost, estimatedCost(p, destination))
+      }.toList.filterNot{s:Step => closedTiles.contains(s.pos) }
 
+      if(newOpenTiles.isEmpty) {
+        println(s"no new open tiles $currentTile")
+        val updatedOpenTiles = (newOpenTiles ++ openTiles).collect {
+          case s if !closedTiles.contains(s.pos) => s
+        }
 
-      val destinationTile: List[Step] = newOpenTiles.collect {
-        case s@AStar.Step(d, _, _, _) if d == destination => s
-      }
+        openTiles.headOption match {
+          case Some(t) => loop(t.pos, t.cost + 1, openTiles, closedTiles, shortestPath.filterNot(currentTile==))
+          case None => List.empty
+        }
 
-      if(destinationTile.isEmpty)
-      {
-        val lowestScoreStep: Step = newOpenTiles.minBy(_.score)
-        val updatedOpenTiles = (openTiles ++ newOpenTiles).filterNot(lowestScoreStep==)
-
-        loop(lowestScoreStep.pos, cost + 1, Some(lowestScoreStep), updatedOpenTiles, lowestScoreStep.pos :: closedTiles, lowestScoreStep :: shortestPath)
       } else {
-        destinationTile ++ shortestPath
+        val destinationTile: Option[Step] = newOpenTiles.collectFirst {
+          case s@AStar.Step(d, _, _) if d == destination => s
+        }
+
+        if (destinationTile.isEmpty) {
+          println(s"Still not at destination $currentTile")
+          val lowestScoreStep: Step = newOpenTiles.minBy(_.score)
+          val updatedCloseTiles = closedTiles + lowestScoreStep.pos
+          val updatedOpenTiles = (newOpenTiles ++ openTiles).collect {
+            case s if !updatedCloseTiles .contains(s.pos) => s
+          }
+
+          println(s"looping with ${lowestScoreStep.pos} added to $shortestPath")
+
+          loop(lowestScoreStep.pos, cost + 1, updatedOpenTiles, updatedCloseTiles, lowestScoreStep :: shortestPath)
+        } else {
+          println(s"at destination $currentTile")
+          destinationTile.toList ++ shortestPath
+        }
       }
     }
 
-    loop(origin, 1, None, List.empty, List(origin), List.empty)
+    loop(origin, 1, List.empty, Set(origin), List.empty)
   }
 
   private def estimatedCost(origin: Pos, destination: Pos): Int =
     Math.abs(destination.x - origin.x) + Math.abs(destination.y - origin.y)
 
-  case class Step(pos: Pos, cost: Int, estimatedCost: Int, parent: Option[Step]) {
+  case class Step(pos: Pos, cost: Int, estimatedCost: Int) {
     val score: Int = cost + estimatedCost
   }
 }
