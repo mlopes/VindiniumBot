@@ -34,32 +34,33 @@ class TheTerminator extends Bot {
     println(s"mine at $notMyMines")
     println(s"me at ${hero.pos}")
 
-    val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, notMyMines)
+    if(hero.life <= 25 ) {
+      val pathToNextPub = AStar.getShortestPathTo(board, hero.pos, lookup.taverns.toList)
 
-    println(s"Next mine path: $pathToNextMine")
+      println(s"Next pub path: $pathToNextPub")
 
-    val step = pathToNextMine match {
-      case Some(s: Step) =>
-        println(s"going to ${s.pos}")
-        if(s.pos.y == hero.pos.y) {
-          if(s.pos.x > hero.pos.x) Dir.South
-          else Dir.North
-        } else {
-          if(s.pos.y > hero.pos.y) Dir.East
-          else Dir.West
-        }
-      case None => Dir.Stay
+      translatePosToMovement(hero.pos, pathToNextPub)
+    } else {
+
+      val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, notMyMines)
+
+      translatePosToMovement(hero.pos, pathToNextMine)
     }
-
-    println(s"step to $step")
-
-    step
-
-    //    Random.shuffle(List(Dir.North, Dir.South, Dir.East, Dir.West)) find { dir ⇒
-    //      input.game.board at input.hero.pos.to(dir) exists (Wall!=)
-    //    }
-    //  } getOrElse Dir.Stay
   }
+
+  def translatePosToMovement(origin: Pos, destination: Option[Step]): Dir = destination match {
+    case Some(s: Step) =>
+      println(s"going to ${s.pos}")
+      if (s.pos.y == origin.y) {
+        if (s.pos.x > origin.x) Dir.South
+        else Dir.North
+      } else {
+        if (s.pos.y > origin.y) Dir.East
+        else Dir.West
+      }
+    case None => Dir.Stay
+  }
+
 }
 
 class Lookup(gameBoard: Board) {
