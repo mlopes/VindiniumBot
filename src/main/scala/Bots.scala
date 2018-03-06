@@ -25,13 +25,16 @@ class TheTerminator extends Bot {
       println(input.game.board.tiles)
     }
 
-    println(s"mine at ${lookup.mines.head}")
+    val notMyMines = lookup.mines.filter { p =>
+      board.at(p) match {
+        case Some(Mine(owner: Option[Int])) if owner.getOrElse(0) == hero.id => false
+        case _ => true
+      }}.toList
+
+    println(s"mine at $notMyMines")
     println(s"me at ${hero.pos}")
 
-    val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, lookup.mines.toList) //.collect
-    //{
-    //  case mine if board.at(mine)
-    //}.head)
+    val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, notMyMines)
 
     println(s"Next mine path: $pathToNextMine")
 
