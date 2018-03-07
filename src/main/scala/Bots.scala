@@ -52,7 +52,10 @@ class TheTerminator extends Bot {
      case _ => false
     }
 
+
+    // TODO: Add all heroes with more health than (hero.life - cost of reaching the hero) to the list of closed tiles
     if(relevantNeighbours.nonEmpty) {
+      // TODO: Actions need to be prioritised rather than just getting the 1st one
       relevantNeighbours.head.dir
     } else if(hero.life <= 25 ) {
       val pathToNextPub = AStar.getShortestPathTo(board, hero.pos, lookup.taverns.toList)
