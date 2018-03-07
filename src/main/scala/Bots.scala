@@ -57,7 +57,6 @@ class TheTerminator extends Bot {
     }
 
 
-    // TODO: Add all heroes with more health than (hero.life - cost of reaching the hero) to the list of closed tiles
     if(relevantNeighbours.nonEmpty) {
       // TODO: Actions need to be prioritised rather than just getting the 1st one
       relevantNeighbours.head.dir
