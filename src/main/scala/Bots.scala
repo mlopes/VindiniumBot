@@ -25,11 +25,15 @@ class TheTerminator extends Bot {
       println(input.game.board.tiles)
     }
 
-    val notMyMines = lookup.mines.filter { p =>
+    val notMyMines: List[Pos] = lookup.mines.filter { p =>
       board.at(p) match {
         case Some(Mine(owner: Option[Int])) if owner.getOrElse(0) == hero.id => false
         case _ => true
       }}.toList
+
+    val weakerHeroes = input.game.heroes.collect {
+      case h:Hero if h.id != hero.id && h.life < (hero.life - AStar.estimatedCost(hero.pos, h.pos)) => h.pos
+    }
 
     println(s"mine at $notMyMines")
     println(s"me at ${hero.pos}")
@@ -65,7 +69,7 @@ class TheTerminator extends Bot {
       translatePosToMovement(hero.pos, pathToNextPub.map(_.pos))
     } else {
 
-      val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, notMyMines)
+      val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, notMyMines ++ weakerHeroes)
 
       translatePosToMovement(hero.pos, pathToNextMine.map(_.pos))
     }
@@ -158,7 +162,7 @@ object AStar {
     loop(destinations.map {o => Step(o, 1, estimatedCost(o, destination), None)}, Set())
   }
 
-  private def estimatedCost(origin: Pos, destination: Pos): Int =
+  def estimatedCost(origin: Pos, destination: Pos): Int =
     Math.abs(destination.x - origin.x) + Math.abs(destination.y - origin.y)
 
   case class Step(pos: Pos, cost: Int, estimatedCost: Int, parent: Option[Step]) {
