@@ -131,12 +131,6 @@ object AStar {
     loop(destinations.map {o => Step(o, 1, estimatedCost(o, destination), None)}, Set())
   }
 
-  def firstStep(step: Option[Step]): Option[Step] = step match {
-    case Some(Step(_, _, _, Some(p: Step))) => firstStep(Some(p))
-    case Some(Step(_, _, _, None)) => step
-    case None => None
-  }
-
   private def estimatedCost(origin: Pos, destination: Pos): Int =
     Math.abs(destination.x - origin.x) + Math.abs(destination.y - origin.y)
 
