@@ -34,28 +34,48 @@ class TheTerminator extends Bot {
     println(s"mine at $notMyMines")
     println(s"me at ${hero.pos}")
 
-    if(hero.life <= 25 ) {
+    val relevantNeighbours = hero.pos.contextualNeighbours.collect {
+      case PositionAndDirection(p, d) if board.at(p).nonEmpty => Neighbour(PositionedTile(p, board.at(p).get), d)
+    }.filter {
+     case Neighbour(PositionedTile(_, Tavern), _) if hero.life < 95 =>
+       println(s"going for a pint as health is still ${hero.life}")
+       true
+     case Neighbour(PositionedTile(_, Mine(o)), _) if o.getOrElse(0) != hero.id && hero.life > 25 =>
+       println(s"going for mine belonging to $o")
+       true
+     case Neighbour(PositionedTile(_, Tile.Hero(id)), _) if hero.life > 25 => input.game.heroes.filter(_.id == id) match {
+       case x :: xs if x.life < hero.life =>
+         println(s"going in for the kill of ${x.id} as ${x.life} < ${hero.life}")
+         true
+       case _ => false
+     }
+     case _ => false
+    }
+
+    if(relevantNeighbours.nonEmpty) {
+      relevantNeighbours.head.dir
+    } else if(hero.life <= 25 ) {
       val pathToNextPub = AStar.getShortestPathTo(board, hero.pos, lookup.taverns.toList)
 
       println(s"Next pub path: $pathToNextPub")
 
-      translatePosToMovement(hero.pos, pathToNextPub)
+      translatePosToMovement(hero.pos, pathToNextPub.map(_.pos))
     } else {
 
       val pathToNextMine = AStar.getShortestPathTo(board, hero.pos, notMyMines)
 
-      translatePosToMovement(hero.pos, pathToNextMine)
+      translatePosToMovement(hero.pos, pathToNextMine.map(_.pos))
     }
   }
 
-  def translatePosToMovement(origin: Pos, destination: Option[Step]): Dir = destination match {
-    case Some(s: Step) =>
-      println(s"going to ${s.pos}")
-      if (s.pos.y == origin.y) {
-        if (s.pos.x > origin.x) Dir.South
+  def translatePosToMovement(origin: Pos, destination: Option[Pos]): Dir = destination match {
+    case Some(p: Pos) =>
+      println(s"going to ${p}")
+      if (p.y == origin.y) {
+        if (p.x > origin.x) Dir.South
         else Dir.North
       } else {
-        if (s.pos.y > origin.y) Dir.East
+        if (p.y > origin.y) Dir.East
         else Dir.West
       }
     case None => Dir.Stay
@@ -90,6 +110,10 @@ object AStar {
     val destination = origin
 
     def loop(originalOpenTiles: List[Step], originalClosedTiles: Set[Pos]): Option[Step] = {
+
+      if(originalOpenTiles.isEmpty) {
+        return None
+      }
 
       val currentTile = originalOpenTiles.minBy(_.score)
       val closedTiles = originalClosedTiles + currentTile.pos

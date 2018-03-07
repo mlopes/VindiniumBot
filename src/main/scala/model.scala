@@ -9,7 +9,11 @@ import Dir._
 
 case class Pos(x: Int, y: Int) {
 
-  def neighbors = Set(North, South, West, East) map to
+  def neighbors: Set[Pos] = Set(North, South, West, East) map to
+
+  def contextualNeighbours: Set[PositionAndDirection] = Set(North, South, West, East) map { d =>
+    PositionAndDirection(to(d), d)
+  }
 
   def to(dir: Dir) = dir match {
     case Stay  ⇒ this
@@ -32,6 +36,8 @@ object Tile {
 }
 
 case class PositionedTile(position: Pos, tile: Tile)
+case class PositionAndDirection(position: Pos, dir: Dir)
+case class Neighbour(tile: PositionedTile, dir: Dir)
 
 case class Board(size: Int, tiles: Vector[Tile]) {
 
